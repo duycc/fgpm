@@ -12,11 +12,7 @@ def read_text(path, data_dir="./"):
     print("reading path: %s" % (data_dir + path))
     label_list = []
     clean_text_list = []
-    if (
-        path.startswith("ag_news")
-        or path.startswith("dbpedia")
-        or path.startswith("yahoo_answers")
-    ):
+    if path.startswith("ag_news") or path.startswith("dbpedia") or path.startswith("yahoo_answers"):
         with open(data_dir + "%s.csv" % path, "r", encoding="utf-8") as csvfile:
             csv_reader = csv.reader(csvfile, delimiter=",")
             count = 0
@@ -50,13 +46,9 @@ def build_dict(dataset, vocab_size=50000, data_dir="./"):
 
 
 def load_dictionary(dataset, max_vocab_size, data_dir="./"):
-    with open(
-        (data_dir + "aux_files/org_dic_%s_%d.pkl" % (dataset, max_vocab_size)), "rb"
-    ) as f:
+    with open((data_dir + "aux_files/org_dic_%s_%d.pkl" % (dataset, max_vocab_size)), "rb") as f:
         org_dic = pickle.load(f)
-    with open(
-        (data_dir + "aux_files/org_inv_dic_%s_%d.pkl" % (dataset, max_vocab_size)), "rb"
-    ) as f:
+    with open((data_dir + "aux_files/org_inv_dic_%s_%d.pkl" % (dataset, max_vocab_size)), "rb") as f:
         org_inv_dic = pickle.load(f)
     return org_dic, org_inv_dic
 
@@ -78,12 +70,7 @@ def loadGloveModel(gloveFile, data_dir="./"):
 
 
 def create_embeddings_matrix(
-    glove_model,
-    dictionary,
-    full_dictionary=None,
-    embedding_size=300,
-    dataset=None,
-    data_dir="./",
+    glove_model, dictionary, full_dictionary=None, embedding_size=300, dataset=None, data_dir="./",
 ):
     embedding_matrix = np.zeros(shape=((embedding_size, len(dictionary))))
     cnt = 0
@@ -98,20 +85,14 @@ def create_embeddings_matrix(
             embedding_matrix[:, i] = glove_model[w]
     print("Number of not found words = ", cnt)
     if cnt != 0 and dataset is not None:
-        f = open(
-            os.path.join(data_dir, "aux_files", "unfound_words_%s.txt" % (dataset)),
-            "w",
-            encoding="utf-8",
-        )
+        f = open(os.path.join(data_dir, "aux_files", "unfound_words_%s.txt" % (dataset)), "w", encoding="utf-8",)
         f.write(" ".join(unfound_words))
         f.close()
     return embedding_matrix, unfound_ids
 
 
 def load_embeddings_matrix(dataset, max_vocab_size, data_dir="./"):
-    glove_embeddings = np.load(
-        data_dir + "aux_files/embeddings_glove_%s_%d.npy" % (dataset, max_vocab_size)
-    )
+    glove_embeddings = np.load(data_dir + "aux_files/embeddings_glove_%s_%d.npy" % (dataset, max_vocab_size))
     return glove_embeddings
 
 
@@ -123,48 +104,23 @@ def compute_dist_matrix(dic, dataset, vocab_size=50000, data_dir="./"):
     """
     INFINITY = 100000
     embedding_matrix, missed = None, None
-    if not os.path.isfile(
-        os.path.join(
-            data_dir,
-            "aux_files",
-            "embeddings_counter_%s_%d.npy" % (dataset, vocab_size),
-        )
-    ):
+    if not os.path.isfile(os.path.join(data_dir, "aux_files", "embeddings_counter_%s_%d.npy" % (dataset, vocab_size),)):
         print("embeddings_counter_%s_%d.npy" % (dataset, vocab_size) + " not exists.")
         glove_tmp = loadGloveModel("counter-fitted-vectors.txt", data_dir=data_dir)
-        embedding_matrix, missed = create_embeddings_matrix(
-            glove_tmp, dic, data_dir=data_dir
-        )
+        embedding_matrix, missed = create_embeddings_matrix(glove_tmp, dic, data_dir=data_dir)
         np.save(
-            os.path.join(
-                data_dir,
-                "aux_files",
-                "embeddings_counter_%s_%d.npy" % (dataset, vocab_size),
-            ),
+            os.path.join(data_dir, "aux_files", "embeddings_counter_%s_%d.npy" % (dataset, vocab_size),),
             embedding_matrix,
         )
         np.save(
-            os.path.join(
-                data_dir,
-                "aux_files",
-                "missed_embeddings_counter_%s_%d.npy" % (dataset, vocab_size),
-            ),
-            missed,
+            os.path.join(data_dir, "aux_files", "missed_embeddings_counter_%s_%d.npy" % (dataset, vocab_size),), missed,
         )
     else:
         embedding_matrix = np.load(
-            os.path.join(
-                data_dir,
-                "aux_files",
-                "embeddings_counter_%s_%d.npy" % (dataset, vocab_size),
-            )
+            os.path.join(data_dir, "aux_files", "embeddings_counter_%s_%d.npy" % (dataset, vocab_size),)
         )
         missed = np.load(
-            os.path.join(
-                data_dir,
-                "aux_files",
-                "missed_embeddings_counter_%s_%d.npy" % (dataset, vocab_size),
-            )
+            os.path.join(data_dir, "aux_files", "missed_embeddings_counter_%s_%d.npy" % (dataset, vocab_size),)
         )
 
     embedding_matrix = embedding_matrix.astype(np.float32)
@@ -180,9 +136,7 @@ def compute_dist_matrix(dic, dataset, vocab_size=50000, data_dir="./"):
     return dist
 
 
-def create_small_embedding_matrix(
-    dist_mat, MAX_VOCAB_SIZE, threshold=1.5, retain_num=50
-):
+def create_small_embedding_matrix(dist_mat, MAX_VOCAB_SIZE, threshold=1.5, retain_num=50):
     """
     Create the synonym matrix. 
     The i-th row represents the synonyms of the word with id i and their distances.
@@ -198,24 +152,15 @@ def create_small_embedding_matrix(
             mask = np.where(dist_list < threshold)
             dist_order, dist_list = dist_order[mask], dist_list[mask]
         n_return = len(dist_order)
-        dist_order_arr = np.pad(
-            dist_order, (0, retain_num - n_return), "constant", constant_values=(-1, -1)
-        )
-        dist_list_arr = np.pad(
-            dist_list, (0, retain_num - n_return), "constant", constant_values=(-1, -1)
-        )
+        dist_order_arr = np.pad(dist_order, (0, retain_num - n_return), "constant", constant_values=(-1, -1))
+        dist_list_arr = np.pad(dist_list, (0, retain_num - n_return), "constant", constant_values=(-1, -1))
         small_embedding_matrix[i, :, 0] = dist_order_arr
         small_embedding_matrix[i, :, 1] = dist_list_arr
     return small_embedding_matrix
 
 
 def load_dist_mat(dataset, max_vocab_size, data_dir="./"):
-    dist_mat = np.load(
-        (
-            data_dir
-            + "aux_files/small_dist_counter_%s_%d.npy" % (dataset, max_vocab_size)
-        )
-    )
+    dist_mat = np.load((data_dir + "aux_files/small_dist_counter_%s_%d.npy" % (dataset, max_vocab_size)))
     return dist_mat
 
 
@@ -223,10 +168,7 @@ def text_to_tokens(text):
     """
     Clean the raw text.
     """
-    spliter = re.split(
-        r"([\'\#\ \!\"\$\%\&\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~\t\n])",
-        text,
-    )
+    spliter = re.split(r"([\'\#\ \!\"\$\%\&\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~\t\n])", text,)
     tokens = [token for token in filter(lambda x: (x != "" and x != " "), spliter)]
     return tokens
 
@@ -246,9 +188,7 @@ def text_encoder(texts, org_dic, maxlen):
         seqs.append(words)
         seqs_mask.append(mask)
     seqs = pad_sequences(seqs, maxlen=maxlen, padding="post", truncating="post")
-    seqs_mask = pad_sequences(
-        seqs_mask, maxlen=maxlen, padding="post", truncating="post", value=0
-    )
+    seqs_mask = pad_sequences(seqs_mask, maxlen=maxlen, padding="post", truncating="post", value=0)
     return seqs, seqs_mask
 
 

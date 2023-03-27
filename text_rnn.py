@@ -18,9 +18,7 @@ def textrnn(input_x, dropout_keep_prob, dataset, reuse=False):
     # Embedding layer
     with tf.variable_scope("embedding", reuse=reuse):
         embeddings = tf.get_variable(
-            "W",
-            initializer=tf.random_uniform([vocab_size + 1, embedding_size], -1.0, 1.0),
-            trainable=True,
+            "W", initializer=tf.random_uniform([vocab_size + 1, embedding_size], -1.0, 1.0), trainable=True,
         )
         embedded_chars = tf.nn.embedding_lookup(
             embeddings, input_x, name="embedded_chars"
@@ -36,9 +34,7 @@ def textrnn(input_x, dropout_keep_prob, dataset, reuse=False):
 
         # Stacking multi-layers
         cell = tf.nn.rnn_cell.MultiRNNCell([get_a_cell() for _ in range(3)])
-        outputs, last_state = tf.nn.dynamic_rnn(
-            cell, embedded_chars, dtype=tf.float32
-        )  # , initial_state=initial_state
+        outputs, last_state = tf.nn.dynamic_rnn(cell, embedded_chars, dtype=tf.float32)  # , initial_state=initial_state
         output = tf.reduce_mean(outputs, axis=1)
 
     # Add dropout
@@ -48,9 +44,7 @@ def textrnn(input_x, dropout_keep_prob, dataset, reuse=False):
     # Final (unnormalized) scores and predictions
     with tf.variable_scope("output", reuse=reuse):
         W = tf.get_variable(
-            "W",
-            shape=[128, num_classes],  # sequence_length *
-            initializer=tf.contrib.layers.xavier_initializer(),
+            "W", shape=[128, num_classes], initializer=tf.contrib.layers.xavier_initializer(),  # sequence_length *
         )
         b = tf.get_variable("b", initializer=tf.constant(0.1, shape=[num_classes]))
         scores = tf.nn.xw_plus_b(rnn_drop, W, b, name="scores")

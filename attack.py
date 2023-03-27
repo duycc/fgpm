@@ -1,6 +1,8 @@
 import os
+
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import logging
+
 logging.getLogger("tensorflow").setLevel(logging.FATAL)
 import tensorflow as tf
 from utils import (
@@ -23,40 +25,28 @@ import time
 import math
 
 # Dataset params
-tf.flags.DEFINE_string(
-    "data", "ag_news", "Dataset (dbpedia, yahoo_answers, ag_news)"
-)
+tf.flags.DEFINE_string("data", "ag_news", "Dataset (dbpedia, yahoo_answers, ag_news)")
 
 # Model loading params
 tf.flags.DEFINE_string(
     "nn_type", "textcnn", "The neural network classification model (choices: textcnn, textrnn, textbirnn)"
 )
-tf.flags.DEFINE_string(
-    "train_type", "org", "The training way of the model to be loaded (choices: org, adv)"
-)
+tf.flags.DEFINE_string("train_type", "org", "The training way of the model to be loaded (choices: org, adv)")
 tf.flags.DEFINE_string("time", None, "The timestamp of the model to be loaded")
 tf.flags.DEFINE_string("step", None, "The checkpoint epoch of the model to be loaded")
 
 # Attack params
 tf.flags.DEFINE_integer("batch_size", 200, "The number of randomly selected samples to be attacked (default: 200)")
 tf.flags.DEFINE_string("recipe", "FGPM", "The attack recipe (default: FGPM)")
+tf.flags.DEFINE_boolean("evaluate_testset", True, "Evaluate the entire test set before attack.")
+tf.flags.DEFINE_boolean("stop_words", True, "Do not modify stop words, such as prepositions and articles.")
 tf.flags.DEFINE_boolean(
-    "evaluate_testset", True, "Evaluate the entire test set before attack."
-)
-tf.flags.DEFINE_boolean(
-    "stop_words", True, "Do not modify stop words, such as prepositions and articles."
-)
-tf.flags.DEFINE_boolean(
-    "save_to_file",
-    True,
-    "Save adverarial examples and attack results to file <project-dir>/adv_samples/~.",
+    "save_to_file", True, "Save adverarial examples and attack results to file <project-dir>/adv_samples/~.",
 )
 
 # Synonyms params
 tf.flags.DEFINE_float(
-    "distance_threshold",
-    0.5,
-    "The maximum distance between two substitutions (default: 0.5)",
+    "distance_threshold", 0.5, "The maximum distance between two substitutions (default: 0.5)",
 )
 tf.flags.DEFINE_integer(
     "max_candidates",
@@ -68,9 +58,7 @@ tf.flags.DEFINE_integer(
 tf.flags.DEFINE_integer("max_iter", 30, "Maximum number of substitutions allowed.")
 tf.flags.DEFINE_integer("grad_upd_interval", 1, "grad update interval")
 tf.flags.DEFINE_float(
-    "max_perturbed_percent",
-    0.25,
-    "Upper bound for word substitution ratio (default: 0.25)",
+    "max_perturbed_percent", 0.25, "Upper bound for word substitution ratio (default: 0.25)",
 )
 
 
@@ -94,10 +82,7 @@ def generate_model_path(model_dir):
     CHECKPOINT_DIR = os.path.join(
         model_dir,
         "./runs_%s/%s/checkpoints/"
-        % (
-            FLAGS.nn_type,
-            generate_model_save_path(FLAGS.time, FLAGS.data, FLAGS.train_type),
-        ),
+        % (FLAGS.nn_type, generate_model_save_path(FLAGS.time, FLAGS.data, FLAGS.train_type),),
     )
     if FLAGS.step == "":
         checkpoint_file = tf.train.latest_checkpoint(CHECKPOINT_DIR)
@@ -121,9 +106,7 @@ def sample(clean_text_list, labels, sample_num):
     return list(clean_text_list[sampled_idx]), list(labels[sampled_idx])
 
 
-def encode_convert_to_text(
-    perturbed_encoded_text, sample_encoded_text, sample_clean_text, org_inv_dic, dataset
-):
+def encode_convert_to_text(perturbed_encoded_text, sample_encoded_text, sample_clean_text, org_inv_dic, dataset):
 
     index_overflow = False
     ori_tokens = sample_clean_text.split()
@@ -137,9 +120,7 @@ def encode_convert_to_text(
     return index_overflow, " ".join(perturbed_tokens)
 
 
-def check_index_overflow(
-    perturbed_encoded_text, sample_encoded_text, sample_clean_text, dataset
-):
+def check_index_overflow(perturbed_encoded_text, sample_encoded_text, sample_clean_text, dataset):
     index_overflow = False
     ori_tokens = sample_clean_text.split()
     for i in range(min(len(ori_tokens), config.word_max_len[dataset])):
@@ -156,24 +137,17 @@ def output_flags_log(FLAGS):
         flags_log += str(name) + ":\t" + str(value.value) + "\n"
     return flags_log
 
+
 def main(argv=None):
 
     tf.reset_default_graph()
     session_conf = tf.GPUOptions(allow_growth=True)
-    sess = tf.Session(
-        config=tf.ConfigProto(gpu_options=session_conf)
-    )
+    sess = tf.Session(config=tf.ConfigProto(gpu_options=session_conf))
 
-    x = tf.placeholder(
-        tf.int32, shape=[None, config.word_max_len[FLAGS.data]]
-    )
-    x_mask = tf.placeholder(
-        tf.int32, shape=[None, config.word_max_len[FLAGS.data]]
-    )
+    x = tf.placeholder(tf.int32, shape=[None, config.word_max_len[FLAGS.data]])
+    x_mask = tf.placeholder(tf.int32, shape=[None, config.word_max_len[FLAGS.data]])
     y = tf.placeholder(tf.int32, shape=[None])
-    x_org = tf.placeholder(
-        tf.int32, shape=[None, config.word_max_len[FLAGS.data]]
-    )
+    x_org = tf.placeholder(tf.int32, shape=[None, config.word_max_len[FLAGS.data]])
 
     if FLAGS.nn_type == "textcnn":
         _, embedded_chars, predictions, scores = textcnn(x, 1.0, FLAGS.data)
@@ -199,9 +173,7 @@ def main(argv=None):
                 dist_mat[org_dic[stop_word], :, :] = 0
     dist_mat = dist_mat[:, : FLAGS.max_candidates, :]
     clean_texts, labels = read_text("%s/test" % FLAGS.data, data_dir=FLAGS.data_dir)
-    encoded_texts, _ = text_encoder(
-        clean_texts, org_dic, config.word_max_len[FLAGS.data]
-    )
+    encoded_texts, _ = text_encoder(clean_texts, org_dic, config.word_max_len[FLAGS.data])
 
     if FLAGS.evaluate_testset:
         print("Model accuracy on test set:")
@@ -209,11 +181,7 @@ def main(argv=None):
         sample_num = len(clean_texts)
         for i in range(math.ceil(sample_num / 500)):
             pred = sess.run(
-                predictions,
-                feed_dict={
-                    x: encoded_texts[i * 500 : (i + 1) * 500],
-                    y: labels[i * 500 : (i + 1) * 500],
-                },
+                predictions, feed_dict={x: encoded_texts[i * 500 : (i + 1) * 500], y: labels[i * 500 : (i + 1) * 500],},
             )
             for j in range(len(pred)):
                 if pred[j] == labels[i * 500 + j]:
@@ -228,7 +196,6 @@ def main(argv=None):
     sample_encoded_texts, sample_encoded_texts_mask = text_encoder(
         sample_clean_texts, org_dic, config.word_max_len[FLAGS.data]
     )
-
 
     start_attack_time = time.time()
 
@@ -278,13 +245,8 @@ def main(argv=None):
             os.makedirs('adv_samples')
         current_time = str(int(time.time()))
         save_path = "adv_samples/{}-{}-{}-{}-{}-{}.txt".format(
-                FLAGS.recipe,
-                FLAGS.data,
-                FLAGS.nn_type,
-                FLAGS.train_type,
-                FLAGS.time,
-                FLAGS.step,
-            )
+            FLAGS.recipe, FLAGS.data, FLAGS.nn_type, FLAGS.train_type, FLAGS.time, FLAGS.step,
+        )
         save_file = open(save_path, "a", encoding="utf-8")
         save_file.write(output_flags_log(FLAGS))
 
@@ -299,11 +261,7 @@ def main(argv=None):
     for j, perturbed_encoded_text in enumerate(perturbed_encoded_texts):
 
         index_overflow, adv_text = encode_convert_to_text(
-            perturbed_encoded_text,
-            sample_encoded_texts[j],
-            sample_clean_texts[j],
-            org_inv_dic,
-            FLAGS.data,
+            perturbed_encoded_text, sample_encoded_texts[j], sample_clean_texts[j], org_inv_dic, FLAGS.data,
         )
 
         if not wrong_predict_state[j]:
@@ -314,9 +272,7 @@ def main(argv=None):
             diff = calculate_diff(sample_clean_texts[j], adv_text)
             if diff == 0:
                 unchanged_sample_count += 1
-            elif (
-                diff / len(sample_clean_texts[j].split()) > FLAGS.max_perturbed_percent
-            ):
+            elif diff / len(sample_clean_texts[j].split()) > FLAGS.max_perturbed_percent:
                 fail_count += 1
             else:
                 success_attack_count += 1
@@ -335,12 +291,10 @@ def main(argv=None):
             + "\n"
         )
         if FLAGS.save_to_file:
-            save_file.write(log_info)   
+            save_file.write(log_info)
 
     model_acc_before_attack = 1.0 - unchanged_sample_count / FLAGS.batch_size
-    model_acc_after_attack = (
-        1.0 - (unchanged_sample_count + success_attack_count) / FLAGS.batch_size
-    )
+    model_acc_after_attack = 1.0 - (unchanged_sample_count + success_attack_count) / FLAGS.batch_size
 
     if len(substitution_ratio) == 0:
         average_sub_ratio = 0.0
@@ -351,10 +305,7 @@ def main(argv=None):
         ["Total Time For Attack:", end_attack_time - start_attack_time],
         ["Model Accuracy of Test Set:", testset_acc],
         ["Model Accuracy Before Attack:", model_acc_before_attack,],
-        [
-            "Attack Success Rate:",
-            success_attack_count / (FLAGS.batch_size - unchanged_sample_count),
-        ],
+        ["Attack Success Rate:", success_attack_count / (FLAGS.batch_size - unchanged_sample_count),],
         ["Model Accuracy After Attack:", model_acc_after_attack,],
         ["Average Substitution Ratio:", average_sub_ratio,],
     ]
@@ -365,6 +316,7 @@ def main(argv=None):
     if FLAGS.save_to_file:
         save_file.write(result_info)
         save_file.close()
+
 
 if __name__ == "__main__":
     tf.app.run()

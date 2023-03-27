@@ -21,16 +21,12 @@ def textcnn(input_x, dropout_keep_prob, dataset, reuse=False):
         # Embedding layer
         with tf.variable_scope("embedding", reuse=reuse):
             embeddings = tf.get_variable(
-                initializer=tf.random_uniform([vocab_size + 1, embedding_size], -1.0, 1.0),
-                name="W",
-                trainable=True,
+                initializer=tf.random_uniform([vocab_size + 1, embedding_size], -1.0, 1.0), name="W", trainable=True,
             )
             embedded_chars = tf.nn.embedding_lookup(
                 embeddings, input_x, name="embedded_chars"
             )  # [None, sequence_length, embedding_size]
-            embedded_chars_expanded = tf.expand_dims(
-                embedded_chars, -1
-            )  # [None, sequence_length, embedding_size, 1]
+            embedded_chars_expanded = tf.expand_dims(embedded_chars, -1)  # [None, sequence_length, embedding_size, 1]
 
         # Create a convolution + maxpool layer for each filter size
         pooled_outputs = []
@@ -38,20 +34,9 @@ def textcnn(input_x, dropout_keep_prob, dataset, reuse=False):
             with tf.variable_scope("conv-maxpool-%s" % filter_size, reuse=reuse):
                 # Convolution Layer
                 filter_shape = [filter_size, embedding_size, 1, num_filters]
-                W = tf.get_variable(
-                    initializer=tf.truncated_normal(filter_shape, stddev=0.1),
-                    name="W",
-                )
-                b = tf.get_variable(
-                    initializer=tf.constant(0.1, shape=[num_filters]), name="b"
-                )
-                conv = tf.nn.conv2d(
-                    embedded_chars_expanded,
-                    W,
-                    strides=[1, 1, 1, 1],
-                    padding="VALID",
-                    name="conv",
-                )
+                W = tf.get_variable(initializer=tf.truncated_normal(filter_shape, stddev=0.1), name="W",)
+                b = tf.get_variable(initializer=tf.constant(0.1, shape=[num_filters]), name="b")
+                conv = tf.nn.conv2d(embedded_chars_expanded, W, strides=[1, 1, 1, 1], padding="VALID", name="conv",)
                 # Apply nonlinearity
                 h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
                 # Maxpooling over the outputs
@@ -76,9 +61,7 @@ def textcnn(input_x, dropout_keep_prob, dataset, reuse=False):
         # Final (unnormalized) scores and predictions
         with tf.variable_scope("output", reuse=reuse):
             W = tf.get_variable(
-                "W",
-                shape=[num_filters_total, num_classes],
-                initializer=tf.contrib.layers.xavier_initializer(),
+                "W", shape=[num_filters_total, num_classes], initializer=tf.contrib.layers.xavier_initializer(),
             )
             b = tf.get_variable(initializer=tf.constant(0.1, shape=[num_classes]), name="b")
             scores = tf.nn.xw_plus_b(h_drop, W, b, name="scores")
@@ -89,9 +72,7 @@ def textcnn(input_x, dropout_keep_prob, dataset, reuse=False):
 
 def compute_loss(logits, input_y, num_classes):
     losses = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits(
-            labels=tf.one_hot(input_y, depth=num_classes), logits=logits
-        )
+        tf.nn.softmax_cross_entropy_with_logits(labels=tf.one_hot(input_y, depth=num_classes), logits=logits)
     )
     return losses
 
