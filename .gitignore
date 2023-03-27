@@ -130,3 +130,5 @@ dmypy.json
 
 model/
 data/
+adv_samples/
+nohup.out
