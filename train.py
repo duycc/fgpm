@@ -15,15 +15,13 @@ from text_cnn import textcnn, compute_loss, compute_acc
 from text_rnn import textrnn
 from text_birnn import textbirnn
 from FGPM import FGPM
-from utils import text_encoder, read_text, load_dictionary, generate_model_save_path
+from utils import text_encoder, read_text, load_dictionary, generate_model_save_path, send_task_finish_message
 from Config import config
 
 # Dataset params
 tf.flags.DEFINE_string("data", "ag_news", "Dataset (choices: dbpedia, yahoo_answers, ag_news)")
 # Model and training params
-tf.flags.DEFINE_string(
-    "nn_type", "textcnn", "The neural network classification model (choices: textcnn, textrnn, textbirnn)"
-)
+tf.flags.DEFINE_string("nn_type", "textcnn", "The neural network classification model (choices: textcnn, textrnn, textbirnn)")
 tf.flags.DEFINE_string("train_type", "org", "Normal train or adversarial train (choices: org, adv)")
 tf.flags.DEFINE_float(
     "adv_sigma", 0.5, "Hypermeter combining original and adversarial loss when adv-training",
@@ -65,15 +63,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu
 
 
 def train(
-    train_seqs,
-    train_seqs_mask,
-    train_labels,
-    test_seqs,
-    test_seqs_mask,
-    test_labels,
-    embedding_matrix,
-    dist_mat,
-    num_classes,
+    train_seqs, train_seqs_mask, train_labels, test_seqs, test_seqs_mask, test_labels, embedding_matrix, dist_mat, num_classes,
 ):
 
     num_examples = len(train_labels)
@@ -88,15 +78,8 @@ def train(
         x_mask = tf.placeholder(tf.int32, shape=[None, config.word_max_len[FLAGS.data]])
         y = tf.placeholder(tf.int32, shape=[None])
 
-        train_dataset = (
-            tf.data.Dataset.from_tensor_slices((x, x_mask, y))
-            .shuffle(num_examples)
-            .batch(FLAGS.batch_size)
-            .prefetch(buffer_size=1)
-        )
-        test_dataset = (
-            tf.data.Dataset.from_tensor_slices((x, x_mask, y)).shuffle(num_examples).batch(200).prefetch(buffer_size=1)
-        )
+        train_dataset = tf.data.Dataset.from_tensor_slices((x, x_mask, y)).shuffle(num_examples).batch(FLAGS.batch_size).prefetch(buffer_size=1)
+        test_dataset = tf.data.Dataset.from_tensor_slices((x, x_mask, y)).shuffle(num_examples).batch(200).prefetch(buffer_size=1)
 
         iterator = tf.data.Iterator.from_structure(train_dataset.output_types, train_dataset.output_shapes)
 
@@ -167,11 +150,7 @@ def train(
         # Output directory for models and summaries
         timestamp = str(int(time.time()))
         out_dir = os.path.abspath(
-            os.path.join(
-                FLAGS.model_dir,
-                "runs_%s" % FLAGS.nn_type,
-                generate_model_save_path(timestamp, FLAGS.data, FLAGS.train_type),
-            )
+            os.path.join(FLAGS.model_dir, "runs_%s" % FLAGS.nn_type, generate_model_save_path(timestamp, FLAGS.data, FLAGS.train_type),)
         )
         print("Saving model to {}\n".format(out_dir))
         checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
@@ -255,6 +234,7 @@ def train(
     with open(log_save_path, "a", encoding="utf-8") as f:
         f.write(time.strftime("\n%Y-%m-%d %H:%M:%S\n", time.localtime(time.time())))
         f.write(flags_log + logging_str)
+    send_task_finish_message()
 
 
 def main(argv=None):
@@ -266,9 +246,7 @@ def main(argv=None):
     train_seqs, train_seqs_mask = text_encoder(train_texts, org_dic, config.word_max_len[FLAGS.data])
     test_seqs, test_seqs_mask = text_encoder(test_texts, org_dic, config.word_max_len[FLAGS.data])
     print("Dataset ", FLAGS.data, " loaded!")
-    glove_embedding_matrix = np.load(
-        FLAGS.data_dir + "aux_files/embeddings_glove_%s_%d.npy" % (FLAGS.data, MAX_VOCAB_SIZE)
-    )
+    glove_embedding_matrix = np.load(FLAGS.data_dir + "aux_files/embeddings_glove_%s_%d.npy" % (FLAGS.data, MAX_VOCAB_SIZE))
     dist_mat = np.load(FLAGS.data_dir + "aux_files/small_dist_counter_%s_%d.npy" % (FLAGS.data, MAX_VOCAB_SIZE))
     for stop_word in config.stop_words:
         if stop_word in org_dic:

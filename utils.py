@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+import requests
 import tensorflow as tf
 import csv
 import re
@@ -109,19 +110,14 @@ def compute_dist_matrix(dic, dataset, vocab_size=50000, data_dir="./"):
         glove_tmp = loadGloveModel("counter-fitted-vectors.txt", data_dir=data_dir)
         embedding_matrix, missed = create_embeddings_matrix(glove_tmp, dic, data_dir=data_dir)
         np.save(
-            os.path.join(data_dir, "aux_files", "embeddings_counter_%s_%d.npy" % (dataset, vocab_size),),
-            embedding_matrix,
+            os.path.join(data_dir, "aux_files", "embeddings_counter_%s_%d.npy" % (dataset, vocab_size),), embedding_matrix,
         )
         np.save(
             os.path.join(data_dir, "aux_files", "missed_embeddings_counter_%s_%d.npy" % (dataset, vocab_size),), missed,
         )
     else:
-        embedding_matrix = np.load(
-            os.path.join(data_dir, "aux_files", "embeddings_counter_%s_%d.npy" % (dataset, vocab_size),)
-        )
-        missed = np.load(
-            os.path.join(data_dir, "aux_files", "missed_embeddings_counter_%s_%d.npy" % (dataset, vocab_size),)
-        )
+        embedding_matrix = np.load(os.path.join(data_dir, "aux_files", "embeddings_counter_%s_%d.npy" % (dataset, vocab_size),))
+        missed = np.load(os.path.join(data_dir, "aux_files", "missed_embeddings_counter_%s_%d.npy" % (dataset, vocab_size),))
 
     embedding_matrix = embedding_matrix.astype(np.float32)
     c_ = -2 * np.dot(embedding_matrix.T, embedding_matrix)
@@ -211,3 +207,16 @@ def calculate_diff_for_array(a, b):
 
 def generate_model_save_path(timestamp, dataset, train_type):
     return "%s_%s_%s" % (timestamp, dataset, train_type)
+
+
+def send_task_finish_message():
+    headers = {
+        "Authorization": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjk1NDA0LCJ1dWlkIjoiOGExMDEyYWMtZjNiMy00YjZkLWEzOGItZTRjY2FiZjc5ZDUzIiwiaXNfYWRtaW4iOmZhbHNlLCJpc19zdXBlcl9hZG1pbiI6ZmFsc2UsInN1Yl9uYW1lIjoiIiwidGVuYW50IjoiYXV0b2RsIiwidXBrIjoiIn0.JRZHy9RZY1yRuo0-HWeYzWiyP6QPjTkUgXG1DsSpFKrdzXrqu4kQuEOM-A4altom3qH0NsW5iyoQQHQiBH-2wA"
+    }
+    resp = requests.post(
+        "https://www.autodl.com/api/v1/wechat/message/send",
+        json={"title": "FGPM", "name": "RNN Train", "content": "Train Finished",},
+        headers=headers,
+    )
+    print(resp.content.decode())
+

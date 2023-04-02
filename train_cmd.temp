@@ -1,0 +1,22 @@
+[CNN]
+    - org
+python train.py  --data ag_news -nn_type textcnn --train_type org --num_epochs=2 --num_checkpoints=2 --data_dir ./data/ --model_dir ./model/
+python train.py  --data dbpedia -nn_type textcnn --train_type org --num_epochs=2 --num_checkpoints=2 --data_dir ./data/ --model_dir ./model/
+python train.py  --data yahoo_answers -nn_type textcnn --train_type org --num_epochs=2 --num_checkpoints=2 --data_dir ./data/ --model_dir ./model/
+    - adv
+python train.py  --data ag_news -nn_type textcnn --train_type adv --num_epochs=10 --num_checkpoints=10 --grad_upd_interval=1 --max_iter=30 --data_dir ./data/ --model_dir ./model/
+python train.py  --data dbpedia -nn_type textcnn --train_type adv --num_epochs=10 --num_checkpoints=10 --grad_upd_interval=1 --max_iter=40 --data_dir ./data/ --model_dir ./model/
+python train.py  --data yahoo_answers -nn_type textcnn --train_type adv --num_epochs=10 --num_checkpoints=10 --grad_upd_interval=5 --max_iter=50 --data_dir ./data/ --model_dir ./model/
+
+[RNN]
+    - org
+python train.py  --data ag_news -nn_type textrnn --train_type org --num_epochs=3 --num_checkpoints=3 --data_dir ./data/ --model_dir ./model/
+python train.py  --data dbpedia -nn_type textrnn --train_type org --num_epochs=3 --num_checkpoints=3 --data_dir ./data/ --model_dir ./model/
+python train.py  --data yahoo_answers -nn_type textrnn --train_type org --num_epochs=3 --num_checkpoints=3 --data_dir ./data/ --model_dir ./model/
+    
+    - adv
+python train.py  --data ag_news -nn_type textcnn --train_type adv --num_epochs=10 --num_checkpoints=10 --grad_upd_interval=1 --max_iter=30 --data_dir ./data/ --model_dir ./model/
+python train.py  --data dbpedia -nn_type textcnn --train_type adv --num_epochs=10 --num_checkpoints=10 --grad_upd_interval=1 --max_iter=40 --data_dir ./data/ --model_dir ./model/
+python train.py  --data yahoo_answers -nn_type textcnn --train_type adv --num_epochs=10 --num_checkpoints=10 --grad_upd_interval=5 --max_iter=50 --data_dir ./data/ --model_dir ./model/
+
+[BIRNN]
